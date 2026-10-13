@@ -93,16 +93,18 @@ This allows shipment dates and actual delivery dates to be filtered independentl
 
 ### Relationships
 
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/d46ac962-6082-4cde-b3c2-96348545ee50" />
+
 The model uses one-to-many relationships between dimension tables and `FactShipments`, with single-direction filtering.
 
 The dimension columns serve as unique relationship keys, while the corresponding columns in `FactShipments` serve as foreign keys.
 
-<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/d46ac962-6082-4cde-b3c2-96348545ee50" />
-
-
 ## 3. Validating the Model
 
 After creating the relationships, I checked the existing DAX measures.
+
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/8d6f565e-cdb7-47ec-b621-79ca2c2b7c63" />
+
 
 | Measure | Result |
 |---|---:|
