@@ -1,116 +1,137 @@
-# Shipment Data Validation & Semantic Modeling using Power BI
+# Shipment Data Validation & Semantic Modeling | Power BI
 
-## About the Project
+## Project Overview
 
-This project is an extension of my [Carrier Cost & Delivery Performance Analysis](https://github.com/Utkarshaaa13/Carrier-Cost-Delivery-Performance-PowerBI).
+Before analyzing shipment costs and delivery performance, it's important to understand the quality and structure of the underlying data.
 
-In the first project, I focused on understanding carrier costs, delivery performance, and shipment trends. For this extension, I wanted to look more closely at the data behind those metrics.
+In this project, I worked with a dataset of 2,000 shipment records to identify data quality issues and build a star schema in Power BI.
 
-Before relying on a dashboard, I wanted to answer a few questions: Are shipment IDs unique? Are delivery dates reliable? Are there missing values or unusual records that could affect the results? And how can the data be organized to make reporting easier?
+My focus was on validating shipment identifiers, checking missing and inconsistent values, and organizing the dataset into fact and dimension tables for reporting.
 
-I used Power Query to validate the shipment data and Power BI to build a star schema, while keeping the existing KPI calculations unchanged.
-
-**Tools Used:** Power BI, Power Query, DAX  
+**Tools:** Power BI, Power Query, DAX  
 **Dataset:** 2,000 shipment records
 
-## 1. Data Validation
+## 1. Understanding and Validating the Data
 
-I started by checking the structure and quality of the shipment data.
+The dataset contains shipment details such as carrier, origin warehouse, destination, shipment and delivery dates, weight, cost, distance, and shipment status.
+
+I started by confirming the data grain: one row represents one shipment.
 
 ### Shipment ID Validation
 
-Each row represents one shipment, so `Shipment_ID` should be unique.
+I used Power Query to group records by `Shipment_ID` and check for duplicates.
 
-Using Power Query, I grouped the records by shipment ID and checked the number of occurrences.
+| Check | Result |
+|---|---:|
+| Total records | 2,000 |
+| Unique shipment IDs | 2,000 |
+| Duplicate IDs | 0 |
+| Missing IDs | 0 |
 
-- Total shipments: 2,000
-- Unique shipment IDs: 2,000
-- Duplicate shipment IDs: 0
-- Missing shipment IDs: 0
-
-This confirmed that the dataset follows a shipment-level grain.
+This confirmed that `Shipment_ID` uniquely identifies each shipment.
 
 ### Delivery Date Validation
 
-Next, I compared `Shipment_Date` and `Delivery_Date` to identify missing or inconsistent dates.
+I compared actual delivery dates with shipment dates and identified three groups of records.
 
-| Finding | Records |
+| Validation result | Records |
 |---|---:|
-| Valid delivery dates | 1,952 |
+| Valid date sequences | 1,952 |
 | Missing delivery dates | 32 |
-| Delivery dates before shipment dates | 16 |
+| Delivery dates earlier than shipment dates | 16 |
 
-The 16 invalid records had delivery dates earlier than their shipment dates, which is not a valid delivery sequence.
+Rather than deleting or replacing these records, I retained them and added a validation column to distinguish valid, missing, and inconsistent dates.
 
-Instead of replacing these values, I retained the records and used a validation column to identify the issues.
+I also kept estimated delivery dates separate from actual delivery dates.
 
-I also kept `Estimated_Delivery_Date` separate from the actual delivery date, since an estimated date should not be treated as proof that a shipment was delivered.
+### Numeric Data Validation
 
-### Numeric Validation
+I checked shipment cost, distance, and weight for missing or invalid values.
 
-I checked shipment cost, distance, and weight for invalid values.
+The checks identified:
 
 - No zero or negative costs among non-null cost records.
 - No zero or negative shipment distances.
-- One shipment, `SH10829`, had a recorded weight of 0 kg.
-- Some cost values were missing and were not replaced with assumed values.
+- One zero-weight shipment (`SH10829`).
+- Missing cost values that were retained without imputation.
 
-The zero-weight record was retained as an anomaly rather than deleted.
+These checks helped identify which records may require additional attention during analysis.
 
-## 2. Building the Star Schema
+## 2. Designing the Star Schema
 
-After completing the validation checks, I worked on organizing the data into a star schema.
+After validating the dataset, I organized it into a star schema.
 
-The model has one central fact table, `FactShipments`, containing shipment-level records, costs, distances, weights, dates, and relationship keys.
+### Fact Table
 
-I created separate dimension tables for:
+`FactShipments` contains the shipment-level records, including:
 
-- Carrier
-- Origin Warehouse
-- Destination
-- Shipment Status
-- Distance Bucket
-- Shipment Date
-- Delivery Date
+- Shipment ID
+- Shipment, delivery, and estimated delivery dates
+- Carrier, warehouse, destination, and status keys
+- Shipment cost, weight, distance, and transit days
+- Data validation information
 
-For the categorical dimensions, I used Power Query references and removed duplicate values to create unique lookup tables.
+### Dimension Tables
 
-For dates, I created calendar tables with Year, Quarter, Month, Month Number, and Week attributes.
+I created seven dimension tables:
 
-I used separate shipment-date and delivery-date dimensions because I wanted to filter shipments by when they were shipped and when they were delivered independently.
+| Dimension | Purpose |
+|---|---|
+| DimCarrier | Carrier information |
+| DimWarehouse | Origin warehouse |
+| DimDestination | Shipment destination |
+| DimStatus | Shipment status |
+| DimDistanceBucket | Distance categories |
+| DimShipmentDate | Shipment calendar |
+| DimDeliveryDate | Delivery calendar |
 
-The relationships use one-to-many cardinality with single-direction filtering.
+The categorical dimensions were created using Power Query references, keeping distinct values for each relationship key.
 
-### Final Data Model
+For date analysis, I created separate calendar dimensions containing Year, Quarter, Month, Month Number, and Week.
 
-*Insert Power BI Model View screenshot here.*
+This allows shipment dates and actual delivery dates to be filtered independently.
 
-## 3. Checking the Existing KPIs
+### Relationships
 
-After building the model, I checked the existing DAX measures to make sure they were still calculating successfully.
+The model uses one-to-many relationships between dimension tables and `FactShipments`, with single-direction filtering.
 
-| KPI | Result |
+The dimension columns serve as unique relationship keys, while the corresponding columns in `FactShipments` serve as foreign keys.
+
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/d46ac962-6082-4cde-b3c2-96348545ee50" />
+
+
+## 3. Validating the Model
+
+After creating the relationships, I checked the existing DAX measures.
+
+| Measure | Result |
 |---|---:|
 | Total Shipments | 2,000 |
 | Eligible Shipments | 1,801 |
 | On-Time Delivery % | 89.39% |
 
-The eligible shipment measure considers delivery status and checks that the actual delivery date is present and not earlier than the shipment date.
+The eligible shipment calculation considers shipment status, missing delivery dates, and invalid delivery-date sequences.
 
-I kept the existing KPI definitions rather than changing the calculations during the modeling work.
+These checks confirmed that the measures returned results consistent with the validation findings.
 
-These results are current-model checks; a separate comparison with the original model's saved KPI values has not been documented.
+## 4. Key Takeaways
 
-## 4. What I Learned
+Working on this project helped me understand how data quality checks and semantic modeling support reliable reporting.
 
-This project helped me understand how much work happens before data reaches a report.
+I gained hands-on experience with:
 
-Even with a relatively small dataset of 2,000 shipments, I found missing dates, invalid date sequences, and a zero-weight record.
+- Validating data at the correct grain.
+- Identifying missing values and inconsistent dates.
+- Handling anomalies without making unsupported assumptions.
+- Creating fact and dimension tables.
+- Building one-to-many relationships.
+- Using separate date dimensions for different reporting requirements.
+- Checking KPI calculations after model changes.
 
-I also gained practical experience creating dimension tables, setting up one-to-many relationships, and working with separate date dimensions for different reporting needs.
+The resulting model provides a structured foundation for shipment and carrier performance analysis.
 
-My main takeaway was that data validation and semantic modeling are important parts of building reports that people can understand and trust.
+## Next Step: Carrier Performance Analysis
 
----
+The next stage focuses on analyzing carrier costs, delivery reliability, and shipment performance using Power BI.
 
-**Related Project:** [Carrier Cost & Delivery Performance Analysis](https://github.com/Utkarshaaa13/Carrier-Cost-Delivery-Performance-PowerBI)
+[Carrier Cost & Delivery Performance Analysis](https://github.com/Utkarshaaa13/Carrier-Cost-Delivery-Performance-PowerBI)
