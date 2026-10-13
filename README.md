@@ -103,7 +103,8 @@ The dimension columns serve as unique relationship keys, while the corresponding
 
 After creating the relationships, I checked the existing DAX measures.
 
-<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/8d6f565e-cdb7-47ec-b621-79ca2c2b7c63" />
+<img width="1920" height="1032" alt="image" src="https://github.com/user-attachments/assets/32515684-b693-4d23-bbc9-80063b16a6c5" />
+
 
 
 | Measure | Result |
